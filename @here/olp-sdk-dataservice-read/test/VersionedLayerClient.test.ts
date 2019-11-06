@@ -21,11 +21,14 @@ import * as utils from "../lib/partitioning/QuadKeyUtils";
 import { assert } from "chai";
 import sinon = require("sinon");
 
-import { DataStoreContext } from "../lib/DataStoreContext";
-import { DataStoreDownloadManager } from "../lib/DataStoreDownloadManager";
-import { DownloadManager } from "../lib/DownloadManager";
-import { HRN } from "../lib/HRN";
-import { VersionedLayerClient } from "../lib/VersionedLayerClient";
+import {
+    DataStoreContext,
+    DataStoreDownloadManager,
+    DownloadManager,
+    HRN,
+    PartitionsRequest,
+    VersionedLayerClient
+} from "@here/olp-sdk-dataservice-read";
 
 function createMockDownloadResponse(resp: Object, blob?: string) {
     const headers = new Headers();
@@ -570,7 +573,10 @@ describe("VersionedLayerClient", () => {
     });
 
     it("#getPartitionsMetadata", async () => {
-        const paritions = await versionedLayerClient.getPartitionsMetadata();
+        const partitionsRequest = new PartitionsRequest();
+        const paritions = await versionedLayerClient.getPartitions(
+            partitionsRequest
+        );
         assert.isDefined(paritions);
         assert.isAbove(paritions.partitions.length, 0, "index is empty");
     });

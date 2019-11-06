@@ -2,11 +2,11 @@ import sinon = require("sinon");
 import * as chai from "chai";
 import sinonChai = require("sinon-chai");
 
-import { CatalogClient } from "../lib/CatalogClient";
-import { DataStoreContext } from "../lib/DataStoreContext";
-
-import { MetadataApi } from "@here/olp-sdk-dataservice-api/";
-import { ConfigApi } from "@here/olp-sdk-dataservice-api/";
+import {
+    CatalogClient,
+    DataStoreContext
+} from "@here/olp-sdk-dataservice-read";
+import { ConfigApi, MetadataApi } from "@here/olp-sdk-dataservice-api/";
 
 chai.use(sinonChai);
 const expect = chai.expect;
@@ -146,7 +146,7 @@ describe("VersionedLayerClientMockTests", () => {
 
             await catalogClient
                 .loadAndCacheCatalogConfiguration()
-                .catch(err => {
+                .catch((err: Response) => {
                     expect(err).equal(
                         "Can't load catalog configuration. HRN: fake-hrn-string, error: testError"
                     );

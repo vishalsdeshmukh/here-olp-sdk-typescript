@@ -22,13 +22,17 @@ import {
     ErrorHTTPResponse,
     IndexMap
 } from "./CatalogClientCommon";
-import { ApiName, DataStoreContext } from "./DataStoreContext";
-import { DataStoreRequestBuilder } from "./DataStoreRequestBuilder";
 
 import { BlobApi, MetadataApi, QueryApi } from "@here/olp-sdk-dataservice-api";
-import { HRN } from "./HRN";
+import {
+    ApiName,
+    DataStoreContext,
+    DataStoreRequestBuilder,
+    HRN,
+    PartitionsRequest,
+    QuadKey
+} from "@here/olp-sdk-dataservice-read";
 import { LRUCache } from "./LRUCache";
-import { QuadKey } from "./partitioning/QuadKey";
 import * as utils from "./partitioning/QuadKeyUtils";
 
 /**
@@ -191,11 +195,14 @@ export class VersionedLayerClient {
      * Fetch all partitions metadata from layer
      * @returns list of partittions metadata
      */
-    async getPartitionsMetadata(): Promise<MetadataApi.Partitions> {
+    async getPartitions(
+        partitionsRequest: PartitionsRequest
+    ): Promise<MetadataApi.Partitions> {
         const metaRequestBilder = await this.getRequestBuilder("metadata");
-        const latestVersion = await this.getLatestVersion();
+        const version =
+            partitionsRequest.getVersion() || (await this.getLatestVersion());
         return MetadataApi.getPartitions(metaRequestBilder, {
-            version: latestVersion.version,
+            version,
             layerId: this.layerId
         });
     }
@@ -223,11 +230,11 @@ export class VersionedLayerClient {
     /**
      * Gets the latest available catalog version what can be used as latest layer version
      */
-    private async getLatestVersion(): Promise<MetadataApi.VersionResponse> {
+    private async getLatestVersion(): Promise<number> {
         const builder = await this.getRequestBuilder("metadata").catch(error =>
             Promise.reject(error)
         );
-        return MetadataApi.latestVersion(builder, {
+        const latestVersion = await MetadataApi.latestVersion(builder, {
             startVersion: -1
         }).catch(async (error: Response) =>
             Promise.reject(
@@ -238,6 +245,7 @@ export class VersionedLayerClient {
                 )
             )
         );
+        return latestVersion.version;
     }
 
     /**
@@ -274,10 +282,10 @@ export class VersionedLayerClient {
             "/" +
             utils.mortonCodeFromQuadKey(indexRootKey).toString();
         const queryRequestBuilder = await this.getRequestBuilder("query");
-        const latestVersion = await this.getLatestVersion();
+        const version = await this.getLatestVersion();
 
         dsIndex = await QueryApi.quadTreeIndex(queryRequestBuilder, {
-            version: latestVersion.version,
+            version,
             layerId: this.layerId,
             quadKey: utils.mortonCodeFromQuadKey(indexRootKey).toString(),
             depth: this.indexDepth
@@ -396,7 +404,7 @@ export class VersionedLayerClient {
         const queryRequestBilder = await this.getRequestBuilder("query");
         const latestVersion = await this.getLatestVersion();
         return QueryApi.getPartitionsById(queryRequestBilder, {
-            version: `${latestVersion.version}`,
+            version: `${latestVersion}`,
             layerId: this.layerId,
             partition: [partitionId]
         });

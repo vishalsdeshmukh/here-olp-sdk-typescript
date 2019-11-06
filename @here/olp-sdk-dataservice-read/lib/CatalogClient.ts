@@ -18,13 +18,16 @@
  */
 
 import { ConfigApi, MetadataApi } from "@here/olp-sdk-dataservice-api";
-import { CatalogLayer } from "./CatalogLayer";
-import { DataStoreContext } from "./DataStoreContext";
-import { DataStoreRequestBuilder } from "./DataStoreRequestBuilder";
-import { HRN } from "./HRN";
-import { QuadKey } from "./partitioning/QuadKey";
-import { VersionedLayerClient } from "./VersionedLayerClient";
-import { VolatileLayerClient } from "./VolatileLayerClient";
+import {
+    CatalogLayer,
+    DataStoreContext,
+    DataStoreRequestBuilder,
+    HRN,
+    PartitionsRequest,
+    QuadKey,
+    VersionedLayerClient,
+    VolatileLayerClient
+} from "@here/olp-sdk-dataservice-read";
 
 /**
  * Interface of parameters fo DatastoreClient constructor.
@@ -316,9 +319,25 @@ export class CatalogClient {
                 layerClient.getIndexMetadata(rootKey),
             getPartition: async (id: string, requestInit?: RequestInit) =>
                 layerClient.getPartition(id, requestInit),
-            getTile: async (quadKey: QuadKey) => layerClient.getTile(quadKey),
-            getPartitionsIndex: async () => layerClient.getPartitionsMetadata()
+            getTile: async (quadKey: QuadKey) => layerClient.getTile(quadKey)
         };
+
+        // @todo temporary solution. Will be removed in scope of OLPEDGE-938
+        if (layerClient instanceof VersionedLayerClient) {
+            // make TS happy
+            const versionedLayerClient = layerClient as VersionedLayerClient;
+            result.getPartitions = async (
+                partitionsRequest: PartitionsRequest
+            ) => versionedLayerClient.getPartitions(partitionsRequest);
+        }
+
+        // @todo temporary solution. Will be removed in scope of OLPEDGE-938
+        if (layerClient instanceof VolatileLayerClient) {
+            // make TS happy
+            const volatileLayerClient = layerClient as VolatileLayerClient;
+            result.getPartitionsIndex = async () =>
+                volatileLayerClient.getPartitionsMetadata();
+        }
 
         return result;
     }
